@@ -57,7 +57,7 @@
    - `refactor: xxx`
    - `chore: xxx`
 7. 更新 README 或 `docs/` 文档。
-8. 生成适合放入 Obsidian 的中文阶段总结。
+8. 只有用户明确要求时，才生成或写入适合放入 Obsidian 的中文阶段总结。
 
 ## 项目文档约定
 
@@ -73,6 +73,8 @@
 - `scripts/run_test.sh`：测试或验证入口。
 
 ## Obsidian 沉淀约定
+
+默认不自动生成 Obsidian 总结。只有用户明确要求“写 Obsidian 总结”“生成阶段总结”“整理问题库”等类似任务时，才执行本节。
 
 阶段总结建议放入：
 
