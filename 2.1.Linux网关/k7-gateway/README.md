@@ -57,6 +57,16 @@ python3 -m k7_gateway run-lora --device /dev/ttyS3 --log /var/log/k7-gateway/lor
 python3 -m k7_gateway run-lora --device /dev/ttyS3 --seconds 30 --raw-log /var/log/k7-gateway/lora.raw.log
 ```
 
+联网后发布到 HiveMQ，让上位机后台接收：
+
+```bash
+python3 -m k7_gateway run-lora \
+  --device /dev/ttyS3 \
+  --log /var/log/k7-gateway/lora.jsonl \
+  --mqtt-broker broker.hivemq.com \
+  --transport wifi
+```
+
 离线解析十六进制帧：
 
 ```bash

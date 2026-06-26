@@ -74,6 +74,10 @@ def cmd_run_lora(args: argparse.Namespace) -> int:
         raw_log_path=args.raw_log,
         seconds=args.seconds,
         echo=not args.quiet,
+        mqtt_broker=args.mqtt_broker,
+        mqtt_port=args.mqtt_port,
+        mqtt_client_id=args.mqtt_client_id,
+        transport=args.transport,
     )
 
 
@@ -111,6 +115,10 @@ def build_parser() -> argparse.ArgumentParser:
     run_lora.add_argument("--raw-log", default=None)
     run_lora.add_argument("--seconds", type=float, default=None)
     run_lora.add_argument("--quiet", action="store_true", help="do not echo JSON records to stdout")
+    run_lora.add_argument("--mqtt-broker", default=None, help="publish parsed records to this MQTT broker")
+    run_lora.add_argument("--mqtt-port", type=int, default=1883)
+    run_lora.add_argument("--mqtt-client-id", default="k7-gateway-GW001")
+    run_lora.add_argument("--transport", default="wifi", choices=["wifi", "4g", "5g"])
     run_lora.set_defaults(func=cmd_run_lora)
 
     return parser
