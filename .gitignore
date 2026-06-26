@@ -1,0 +1,71 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Build outputs
+build/
+out/
+output/
+dist/
+target/
+tmp/
+temp/
+*.o
+*.a
+*.so
+*.ko
+*.mod
+*.cmd
+*.dtb
+*.dtbo
+*.img
+*.bin
+*.elf
+*.map
+
+# Archives and large deliverables
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+*.tar.xz
+*.gz
+*.xz
+
+# SDK / vendor drops
+K7-SDK/
+RK3576/
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
