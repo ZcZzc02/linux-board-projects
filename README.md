@@ -4,8 +4,10 @@
 
 ## 当前状态
 
-- 根目录存在空的 `.git` 目录，但缺少 `.git/HEAD` 和 `.git/config`，当前不能视为完整 Git 仓库。
-- Git 已安装在 `D:\tools\git`，当前 PowerShell 暂时找不到裸 `git` 命令。可以使用 `D:\tools\git\cmd\git.exe`，或把 `D:\tools\git\cmd` 加入系统 PATH。
+- 本项目已经初始化为 Git 仓库，当前主分支为 `main`。
+- GitHub 远端仓库：`https://github.com/ZcZzc02/linux-board-projects.git`
+- 本地 `main` 已同步到 `origin/main`。
+- Git 已安装在 `D:\tools\git`。如果 PowerShell 找不到裸 `git` 命令，可以使用 `D:\tools\git\cmd\git.exe`，或把 `D:\tools\git\cmd` 加入系统 PATH。
 - 根目录包含 SDK、文档和备份压缩包等大文件来源，提交前必须确认 `.gitignore` 生效，避免把 SDK、镜像、压缩包和 build 输出提交进仓库。
 
 ## 目录结构
@@ -25,6 +27,7 @@
 │   ├── build.sh
 │   ├── flash.sh
 │   └── run_test.sh
+├── .gitattributes
 └── .gitignore
 ```
 
