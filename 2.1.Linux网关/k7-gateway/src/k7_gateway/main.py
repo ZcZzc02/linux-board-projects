@@ -10,6 +10,7 @@ import time
 from .board_check import run_checks
 from .config import DEFAULT_LORA_BAUD, DEFAULT_LORA_DEVICE, NODE_COUNT
 from .e22 import read_config
+from .gateway import run_lora_gateway
 from .lora_protocol import LoRaFrameError, extract_frames, mqtt_message_for_frame, parse_frame
 
 
@@ -64,6 +65,18 @@ def cmd_listen_lora(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_run_lora(args: argparse.Namespace) -> int:
+    return run_lora_gateway(
+        device=args.device,
+        baud=args.baud,
+        node_count=args.node_count,
+        log_path=args.log,
+        raw_log_path=args.raw_log,
+        seconds=args.seconds,
+        echo=not args.quiet,
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="k7-gateway")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -89,6 +102,16 @@ def build_parser() -> argparse.ArgumentParser:
     listen.add_argument("--node-count", type=int, default=NODE_COUNT)
     listen.add_argument("--raw", action="store_true")
     listen.set_defaults(func=cmd_listen_lora)
+
+    run_lora = sub.add_parser("run-lora", help="run LoRa receiver and write JSONL logs")
+    run_lora.add_argument("--device", default=DEFAULT_LORA_DEVICE)
+    run_lora.add_argument("--baud", type=int, default=DEFAULT_LORA_BAUD)
+    run_lora.add_argument("--node-count", type=int, default=NODE_COUNT)
+    run_lora.add_argument("--log", default="/var/log/k7-gateway/lora.jsonl")
+    run_lora.add_argument("--raw-log", default=None)
+    run_lora.add_argument("--seconds", type=float, default=None)
+    run_lora.add_argument("--quiet", action="store_true", help="do not echo JSON records to stdout")
+    run_lora.set_defaults(func=cmd_run_lora)
 
     return parser
 

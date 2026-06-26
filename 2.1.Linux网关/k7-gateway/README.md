@@ -45,6 +45,18 @@ RX_HEX=c100090000006500170b0000
 python3 -m k7_gateway listen-lora --device /dev/ttyS3 --seconds 60
 ```
 
+长期运行 LoRa 接收并写入 JSONL 日志：
+
+```bash
+python3 -m k7_gateway run-lora --device /dev/ttyS3 --log /var/log/k7-gateway/lora.jsonl
+```
+
+限时验证 30 秒，同时保存原始十六进制数据：
+
+```bash
+python3 -m k7_gateway run-lora --device /dev/ttyS3 --seconds 30 --raw-log /var/log/k7-gateway/lora.raw.log
+```
+
 离线解析十六进制帧：
 
 ```bash
