@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "k7-gateway"
+version = "0.1.0"
+description = "KICKPI K7 Linux gateway for LoRa node data forwarding"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+k7-gateway = "k7_gateway.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

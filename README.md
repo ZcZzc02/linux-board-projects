@@ -57,6 +57,17 @@
 - 烧录流程：[`docs/flash.md`](docs/flash.md)
 - 调试方法：[`docs/debug.md`](docs/debug.md)
 - 跨电脑复现：[`docs/reproduce.md`](docs/reproduce.md)
+- K7 网关接口约定：[`docs/INTERFACE_SPEC.md`](docs/INTERFACE_SPEC.md)
+
+## K7 Linux 网关
+
+K7 Linux 网关工程位于：
+
+```text
+2.1.Linux网关/k7-gateway
+```
+
+当前第一阶段提供 UART3/E22/4G-5G 基线自检、E22 配置读取、LoRa 帧解析和离线测试工具。进入工程后可查看 [`2.1.Linux网关/k7-gateway/README.md`](2.1.Linux网关/k7-gateway/README.md)。
 
 ## Git 工作流
 
