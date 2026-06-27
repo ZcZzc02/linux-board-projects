@@ -1,6 +1,8 @@
 import unittest
 
 from k7_gateway.mqtt_simple import (
+    build_puback_packet,
+    build_subscribe_packet,
     build_connect_packet,
     build_publish_packet,
     encode_remaining_length,
@@ -31,6 +33,15 @@ class MqttSimpleTest(unittest.TestCase):
         self.assertEqual(packet[0], 0x30)
         self.assertIn(b"\x00\x07topic/a", packet)
         self.assertTrue(packet.endswith(b'{"ok":1}'))
+
+    def test_build_subscribe_packet(self):
+        packet = build_subscribe_packet("topic/+", packet_id=7, qos=1)
+
+        self.assertEqual(packet[0], 0x82)
+        self.assertIn(b"\x00\x07\x00\x07topic/+\x01", packet)
+
+    def test_build_puback_packet(self):
+        self.assertEqual(build_puback_packet(7), b"\x40\x02\x00\x07")
 
 
 if __name__ == "__main__":

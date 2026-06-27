@@ -46,6 +46,28 @@ class LoRaProtocolTest(unittest.TestCase):
         self.assertEqual(body["current"], 120)
         self.assertEqual(body["soc"], 90)
 
+    def test_parse_short_rs485_response_as_raw(self):
+        payload = bytes.fromhex("0001")
+        raw = append_crc(bytes([1, 0x03, len(payload)]) + payload)
+
+        frame = parse_frame(raw)
+        topic, message = mqtt_message_for_frame(frame, now_ms=123)
+        body = json.loads(message)
+
+        self.assertEqual(topic, "fengyan_daq_2026/data/node/1/rs485")
+        self.assertEqual(body["payload_hex"], "0001")
+
+    def test_parse_rs485_raw_response(self):
+        payload = bytes.fromhex("010304000100020001")
+        raw = append_crc(bytes([1, 0x41, len(payload)]) + payload)
+
+        frame = parse_frame(raw)
+        topic, message = mqtt_message_for_frame(frame, now_ms=123)
+        body = json.loads(message)
+
+        self.assertEqual(topic, "fengyan_daq_2026/data/node/1/rs485")
+        self.assertEqual(body["payload_hex"], "010304000100020001")
+
     def test_extract_frames_skips_noise(self):
         payload = bytes.fromhex("08980078005A0000")
         raw = append_crc(bytes([1, 0x03, len(payload)]) + payload)

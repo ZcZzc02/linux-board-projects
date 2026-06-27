@@ -15,6 +15,7 @@ class LoRaType(IntEnum):
     AD7606 = 0x01
     CAN = 0x02
     RS485 = 0x03
+    RS485_RAW = 0x41
 
 
 class LoRaFrameError(ValueError):
@@ -35,6 +36,7 @@ class LoRaFrame:
             LoRaType.AD7606: "ad7606",
             LoRaType.CAN: "can",
             LoRaType.RS485: "rs485",
+            LoRaType.RS485_RAW: "rs485",
         }.get(LoRaType(self.frame_type) if self.frame_type in LoRaType._value2member_map_ else None)
         if suffix is None:
             return f"{MQTT_TOPIC_PREFIX}/data/node/{self.node_addr}/unknown"
@@ -121,10 +123,32 @@ def decode_payload(frame: LoRaFrame, *, now_ms: int | None = None) -> dict[str, 
 
     if frame.frame_type == LoRaType.RS485:
         if len(frame.payload) < 8:
-            raise LoRaFrameError("RS485 payload must be at least 8 bytes")
+            return {
+                "ts": timestamp,
+                "raw": frame.raw.hex().upper(),
+                "payload_hex": frame.payload.hex().upper(),
+            }
         regs = list(struct.unpack(">4H", frame.payload[:8]))
         return {
             "ts": timestamp,
+            "voltage": regs[0],
+            "current": regs[1],
+            "soc": regs[2],
+            "raw3": regs[3],
+        }
+
+    if frame.frame_type == LoRaType.RS485_RAW:
+        if len(frame.payload) < 8:
+            return {
+                "ts": timestamp,
+                "raw": frame.raw.hex().upper(),
+                "payload_hex": frame.payload.hex().upper(),
+            }
+        regs = list(struct.unpack(">4H", frame.payload[:8]))
+        return {
+            "ts": timestamp,
+            "raw": frame.raw.hex().upper(),
+            "payload_hex": frame.payload.hex().upper(),
             "voltage": regs[0],
             "current": regs[1],
             "soc": regs[2],

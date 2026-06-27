@@ -78,6 +78,7 @@ def cmd_run_lora(args: argparse.Namespace) -> int:
         mqtt_port=args.mqtt_port,
         mqtt_client_id=args.mqtt_client_id,
         transport=args.transport,
+        mqtt_command_subscribe=args.mqtt_command_subscribe,
     )
 
 
@@ -118,6 +119,11 @@ def build_parser() -> argparse.ArgumentParser:
     run_lora.add_argument("--mqtt-broker", default=None, help="publish parsed records to this MQTT broker")
     run_lora.add_argument("--mqtt-port", type=int, default=1883)
     run_lora.add_argument("--mqtt-client-id", default="k7-gateway-GW001")
+    run_lora.add_argument(
+        "--mqtt-command-subscribe",
+        action="store_true",
+        help="subscribe backend command topics and forward commands to LoRa nodes",
+    )
     run_lora.add_argument("--transport", default="wifi", choices=["wifi", "4g", "5g"])
     run_lora.set_defaults(func=cmd_run_lora)
 

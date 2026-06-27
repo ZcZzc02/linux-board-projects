@@ -146,11 +146,104 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:8001/api/ad7606?limit=3' | ConvertTo-Js
 收到消息 topic=fengyan_daq_2026/data/node/1/ad7606 len=208
 ```
 
+## 开机自启动服务
+
+K7 网关服务文件位于：
+
+```text
+/root/k7-gateway/systemd/k7-gateway.service
+```
+
+项目内对应文件：
+
+```text
+2.1.Linux网关/k7-gateway/systemd/k7-gateway.service
+```
+
+服务启动命令：
+
+```bash
+/usr/bin/python3 -m k7_gateway run-lora \
+  --device /dev/ttyS3 \
+  --log /var/log/k7-gateway/lora.jsonl \
+  --raw-log /var/log/k7-gateway/lora.raw.log \
+  --mqtt-broker broker.emqx.io \
+  --transport wifi \
+  --mqtt-command-subscribe \
+  --quiet
+```
+
+安装或重装服务：
+
+```bash
+cd /root/k7-gateway
+chmod +x scripts/install_systemd_service.sh
+./scripts/install_systemd_service.sh
+```
+
+检查服务状态：
+
+```bash
+systemctl status k7-gateway.service --no-pager
+journalctl -u k7-gateway.service -n 80 --no-pager
+```
+
+成功现象：
+
+```text
+Active: active (running)
+MQTT_BROKER=broker.emqx.io:1883
+MQTT_COMMAND_TOPIC=fengyan_daq_2026/cmd/node/+
+```
+
+## 后台下发闭环验证
+
+后台下发 topic：
+
+```text
+fengyan_daq_2026/cmd/node/{node_id}
+```
+
+K7 网关当前支持的下发命令：
+
+- `rs485_raw`：后台给十六进制字节，K7 用 LoRa `0x41` 透传给节点，节点转发到 RS485 总线。
+- `rs485_read`：K7 构造节点 Modbus `0x03` 读命令。
+- `rs485_write`：K7 构造节点 Modbus `0x06` 写命令。
+- `relay` + `bus=can`：K7 构造 LoRa `0x42` CAN 透传命令，节点发送 CAN 标准帧。
+
+已验证的安全只读命令：
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri 'http://127.0.0.1:8001/api/command' `
+  -ContentType 'application/json' `
+  -Body '{"node_id":"1","cmd":"rs485_read","params":{"reg":1024,"count":1}}'
+```
+
+K7 日志成功现象：
+
+```text
+DOWNLINK_SENT node=1 cmd=rs485_read hex=0103040000013A85
+```
+
+后台入库成功现象：
+
+```json
+{
+  "node_addr": 1,
+  "frame_type": 3,
+  "type_name": "RS485",
+  "raw_hex": "01030200018479",
+  "crc_ok": true,
+  "topic": "fengyan_daq_2026/data/node/1/rs485"
+}
+```
+
 ## 注意事项
 
 - 不要把 WiFi 密码、token、私钥、API key 写入仓库。
 - 当前 5G 模块未到，本文只验证 WiFi 链路。
 - 4G/5G 相关自检失败在当前阶段是预期现象。
 - 如果重新刷官方镜像，LoRa 一定会回到不可用状态，需要重新写入包含 UART3 resource DTB 的 boot。
+- 当前节点源码里 `0x03` 只适合读节点地址寄存器等短响应；测量数据主要靠节点主动上报或 `0x41` RS485 透传响应。
 - 不建议在 Windows NTFS 目录里完整编译 RK SDK；SDK 内存在路径长度、大小写和保留文件名问题。后续需要完整编译时建议使用 WSL2、Linux 虚拟机或原生 Linux。
-

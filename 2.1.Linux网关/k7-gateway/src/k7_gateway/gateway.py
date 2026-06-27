@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .config import MQTT_TOPIC_PREFIX
+from .downlink import DownlinkCommandError, frame_from_command
 from .lora_protocol import extract_frames, mqtt_message_for_frame
 from .mqtt_simple import MqttPublisher
 
@@ -62,6 +63,7 @@ def run_lora_gateway(
     mqtt_port: int = 1883,
     mqtt_client_id: str = "k7-gateway-GW001",
     transport: str = "wifi",
+    mqtt_command_subscribe: bool = False,
 ) -> int:
     from .serial_posix import SerialPort
 
@@ -85,11 +87,32 @@ def run_lora_gateway(
             json.dumps({"online": 1, "transport": transport}, separators=(",", ":")),
         )
         print(f"MQTT_BROKER={mqtt_broker}:{mqtt_port}")
+        if mqtt_command_subscribe:
+            command_topic = f"{MQTT_TOPIC_PREFIX}/cmd/node/+"
+            publisher.subscribe(command_topic, qos=1)
+            print(f"MQTT_COMMAND_TOPIC={command_topic}")
 
     try:
         with SerialPort.open(device, baud) as port:
             with _open_append(log_path) as log_file, _open_append(raw_log_path) as raw_file:
                 while end is None or time.monotonic() < end:
+                    if publisher and mqtt_command_subscribe:
+                        for message in publisher.poll(0.0):
+                            try:
+                                frame = frame_from_command(
+                                    message.topic,
+                                    message.payload,
+                                    node_count=node_count,
+                                )
+                            except DownlinkCommandError as exc:
+                                print(f"DOWNLINK_COMMAND_ERROR={exc}", file=sys.stderr)
+                                continue
+                            port.write(frame.raw)
+                            print(
+                                f"DOWNLINK_SENT node={frame.node_id} cmd={frame.command} "
+                                f"hex={frame.raw_hex}"
+                            )
+
                     chunk = port.read_for(0.5)
                     if not chunk:
                         continue
