@@ -12,6 +12,7 @@ from .config import DEFAULT_LORA_BAUD, DEFAULT_LORA_DEVICE, NODE_COUNT
 from .e22 import read_config
 from .gateway import run_lora_gateway
 from .lora_protocol import LoRaFrameError, extract_frames, mqtt_message_for_frame, parse_frame
+from .network_watchdog import run_network_watchdog
 
 
 def cmd_self_check(args: argparse.Namespace) -> int:
@@ -84,6 +85,15 @@ def cmd_run_lora(args: argparse.Namespace) -> int:
     )
 
 
+def cmd_network_watchdog(args: argparse.Namespace) -> int:
+    return run_network_watchdog(
+        interval=args.interval,
+        broker_host=args.broker_host,
+        broker_port=args.broker_port,
+        once=args.once,
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="k7-gateway")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -140,6 +150,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="seconds between MQTT reconnect attempts",
     )
     run_lora.set_defaults(func=cmd_run_lora)
+
+    watchdog = sub.add_parser(
+        "network-watchdog",
+        help="keep K7 uplink on cellular first, then saved visible WiFi fallback",
+    )
+    watchdog.add_argument("--interval", type=float, default=10.0)
+    watchdog.add_argument("--broker-host", default="broker.emqx.io")
+    watchdog.add_argument("--broker-port", type=int, default=1883)
+    watchdog.add_argument("--once", action="store_true", help="run one check cycle and exit")
+    watchdog.set_defaults(func=cmd_network_watchdog)
 
     return parser
 

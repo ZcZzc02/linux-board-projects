@@ -1,0 +1,18 @@
+[Unit]
+Description=K7 Network Uplink Watchdog
+Wants=NetworkManager.service
+After=NetworkManager.service
+
+[Service]
+Type=simple
+WorkingDirectory=/root/k7-gateway
+Environment=PYTHONPATH=/root/k7-gateway/src
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 -m k7_gateway network-watchdog --interval 10 --broker-host broker.emqx.io --broker-port 1883
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
