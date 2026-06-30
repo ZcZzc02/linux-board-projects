@@ -116,11 +116,17 @@ def query_at_command(port: str, command: str, timeout: float = 1.2) -> str | Non
 def query_cellular_transport() -> Transport | None:
     """Detect current cellular radio generation through ModemManager or AT ports."""
 
+    quectel_log_transport = _query_cellular_transport_with_quectel_log()
+    if quectel_log_transport:
+        return quectel_log_transport
+
     mmcli_transport = _query_cellular_transport_with_mmcli()
     if mmcli_transport:
         return mmcli_transport
 
-    for port in sorted(Path("/dev").glob("ttyUSB*")):
+    ports = sorted(Path("/dev").glob("ttyUSB*"))
+    ports = sorted(ports, key=lambda item: 0 if item.name == "ttyUSB2" else 1)
+    for port in ports:
         at = query_at_command(str(port), "AT", timeout=0.5)
         if not at or "OK" not in at:
             continue
@@ -128,6 +134,22 @@ def query_cellular_transport() -> Transport | None:
         if not cops:
             continue
         transport = transport_from_cops_response(cops)
+        if transport:
+            return transport
+    return None
+
+
+def _query_cellular_transport_with_quectel_log(log_path: str = "/tmp/4G.log") -> Transport | None:
+    """Read quectel-CM log instead of probing modem AT ports in the hot path."""
+
+    try:
+        raw = Path(log_path).read_bytes()[-65536:]
+    except OSError:
+        return None
+    text = raw.decode("utf-8", "replace")
+    matches = list(re.finditer(r"\+COPS:\s*\d+\s*,\s*\d+\s*,\s*\"[^\"]*\"\s*,\s*\d+", text))
+    for match in reversed(matches):
+        transport = transport_from_cops_response(match.group(0))
         if transport:
             return transport
     return None
