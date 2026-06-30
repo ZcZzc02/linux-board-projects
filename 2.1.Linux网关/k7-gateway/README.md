@@ -63,8 +63,27 @@ python3 -m k7_gateway run-lora --device /dev/ttyS3 --seconds 30 --raw-log /var/l
 python3 -m k7_gateway run-lora \
   --device /dev/ttyS3 \
   --log /var/log/k7-gateway/lora.jsonl \
-  --mqtt-broker broker.hivemq.com \
-  --transport wifi
+  --mqtt-broker broker.emqx.io \
+  --transport auto
+```
+
+`--transport auto` 会根据当前默认路由自动上报网关链路状态：
+
+- 默认路由走 `wlan*`：上报 `wifi`
+- 默认路由走 RG200U 暴露的 USB/NCM 网卡：通过 `AT+COPS?` 判断并上报 `4g` 或 `5g`
+- 网络暂时不可用：继续收 LoRa、写本地 JSONL 日志，并周期重试 MQTT
+
+实际“优先 5G/4G，WiFi 兜底”的路由选择由 Linux / NetworkManager 负责。推荐把蜂窝连接 route metric 设为 `100`，WiFi route metric 设为 `600`。
+
+检查当前出口：
+
+```bash
+ip route
+PYTHONPATH=/root/k7-gateway/src python3 - <<'PY'
+from k7_gateway.network_status import default_route_interface, resolve_transport
+print(default_route_interface())
+print(resolve_transport("auto"))
+PY
 ```
 
 离线解析十六进制帧：
@@ -90,4 +109,4 @@ python -m unittest discover -s 2.1.Linux网关/k7-gateway/tests
 3. 切到 E22 透明传输模式，跑 `listen-lora`。
 4. 用节点板真实数据补充解析测试。
 5. 接入 MQTT 上报。
-6. 接入 4G/5G 网络状态机和 systemd 服务。
+6. 接入 4G/5G/WiFi 自动链路状态上报和 systemd 服务。

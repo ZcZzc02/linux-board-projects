@@ -78,6 +78,8 @@ def cmd_run_lora(args: argparse.Namespace) -> int:
         mqtt_port=args.mqtt_port,
         mqtt_client_id=args.mqtt_client_id,
         transport=args.transport,
+        status_interval=args.status_interval,
+        mqtt_reconnect_interval=args.mqtt_reconnect_interval,
         mqtt_command_subscribe=args.mqtt_command_subscribe,
     )
 
@@ -124,7 +126,19 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="subscribe backend command topics and forward commands to LoRa nodes",
     )
-    run_lora.add_argument("--transport", default="wifi", choices=["wifi", "4g", "5g"])
+    run_lora.add_argument("--transport", default="auto", choices=["auto", "wifi", "4g", "5g"])
+    run_lora.add_argument(
+        "--status-interval",
+        type=float,
+        default=10.0,
+        help="seconds between gateway status reports when using MQTT",
+    )
+    run_lora.add_argument(
+        "--mqtt-reconnect-interval",
+        type=float,
+        default=10.0,
+        help="seconds between MQTT reconnect attempts",
+    )
     run_lora.set_defaults(func=cmd_run_lora)
 
     return parser

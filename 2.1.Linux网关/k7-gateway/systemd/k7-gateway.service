@@ -1,5 +1,5 @@
 [Unit]
-Description=K7 LoRa WiFi MQTT Gateway
+Description=K7 LoRa MQTT Gateway
 Wants=network-online.target
 After=network-online.target
 
@@ -8,7 +8,7 @@ Type=simple
 WorkingDirectory=/root/k7-gateway
 Environment=PYTHONPATH=/root/k7-gateway/src
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/usr/bin/python3 -m k7_gateway run-lora --device /dev/ttyS3 --log /var/log/k7-gateway/lora.jsonl --raw-log /var/log/k7-gateway/lora.raw.log --mqtt-broker broker.emqx.io --transport wifi --mqtt-command-subscribe --quiet
+ExecStart=/usr/bin/python3 -m k7_gateway run-lora --device /dev/ttyS3 --log /var/log/k7-gateway/lora.jsonl --raw-log /var/log/k7-gateway/lora.raw.log --mqtt-broker broker.emqx.io --transport auto --mqtt-command-subscribe --quiet
 Restart=always
 RestartSec=5
 StandardOutput=journal
