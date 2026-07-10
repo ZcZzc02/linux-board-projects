@@ -22,7 +22,7 @@
 - 系统：KICKPI 官方 Ubuntu 24.04 镜像
 - 内核：`Linux kickpi 6.1.75 #24 SMP Mon Nov 17 19:39:47 CST 2025 aarch64`
 - 网络：WiFi 热点
-- MQTT broker：`broker.emqx.io:1883`
+- MQTT broker：`broker.hivemq.com:1883`
 - topic：`fengyan_daq_2026/data/node/1/ad7606`
 - K7 网关程序路径：`/root/k7-gateway`
 - 本机后台端口：`127.0.0.1:8001`
@@ -77,7 +77,7 @@ RX_HEX=010110...
 
 ## 后台启动状态
 
-本机后台使用 `8001` 端口连接 `broker.emqx.io`。检查监听端口：
+本机后台使用 `8001` 端口连接 `broker.hivemq.com`。检查监听端口：
 
 ```powershell
 netstat -ano | Select-String ':8001'
@@ -92,7 +92,7 @@ Get-Content -Path (Join-Path (Get-Location) 'work\backend8001.err.log') -Tail 80
 成功现象：
 
 ```text
-已连接到 MQTT Broker: broker.emqx.io:1883
+已连接到 MQTT Broker: broker.hivemq.com:1883
 已订阅 topic: fengyan_daq_2026/data/node/+/ad7606
 ```
 
@@ -101,14 +101,14 @@ Get-Content -Path (Join-Path (Get-Location) 'work\backend8001.err.log') -Tail 80
 在 K7 上运行 LoRa 网关程序，并把解析后的数据发布到 MQTT：
 
 ```powershell
-adb shell "cd /root/k7-gateway && PYTHONPATH=src timeout 35 python3 -m k7_gateway run-lora --device /dev/ttyS3 --seconds 25 --raw-log /tmp/lora.raw.log --log /tmp/lora.jsonl --mqtt-broker broker.emqx.io --transport wifi"
+adb shell "cd /root/k7-gateway && PYTHONPATH=src timeout 35 python3 -m k7_gateway run-lora --device /dev/ttyS3 --seconds 25 --raw-log /tmp/lora.raw.log --log /tmp/lora.jsonl --mqtt-broker broker.hivemq.com --transport wifi"
 ```
 
 成功现象：
 
 ```text
 Running LoRa gateway on /dev/ttyS3 at 9600
-MQTT_BROKER=broker.emqx.io:1883
+MQTT_BROKER=broker.hivemq.com:1883
 {"topic":"fengyan_daq_2026/data/node/1/ad7606","payload":{...}}
 ```
 
@@ -167,7 +167,7 @@ K7 网关服务文件位于：
   --device /dev/ttyS3 \
   --log /var/log/k7-gateway/lora.jsonl \
   --raw-log /var/log/k7-gateway/lora.raw.log \
-  --mqtt-broker broker.emqx.io \
+  --mqtt-broker broker.hivemq.com \
   --transport wifi \
   --mqtt-command-subscribe \
   --quiet
@@ -192,7 +192,7 @@ journalctl -u k7-gateway.service -n 80 --no-pager
 
 ```text
 Active: active (running)
-MQTT_BROKER=broker.emqx.io:1883
+MQTT_BROKER=broker.hivemq.com:1883
 MQTT_COMMAND_TOPIC=fengyan_daq_2026/cmd/node/+
 ```
 

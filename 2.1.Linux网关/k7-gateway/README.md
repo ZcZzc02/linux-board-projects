@@ -63,7 +63,7 @@ python3 -m k7_gateway run-lora --device /dev/ttyS3 --seconds 30 --raw-log /var/l
 python3 -m k7_gateway run-lora \
   --device /dev/ttyS3 \
   --log /var/log/k7-gateway/lora.jsonl \
-  --mqtt-broker broker.emqx.io \
+  --mqtt-broker broker.hivemq.com \
   --transport auto
 ```
 

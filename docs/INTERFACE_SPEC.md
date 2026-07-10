@@ -196,8 +196,8 @@ payload 示例：
 
 | 项目 | 值 |
 | --- | --- |
-| broker | `broker.emqx.io` |
+| broker | `broker.hivemq.com` |
 | port | `1883` |
 | topic prefix | `fengyan_daq_2026` |
 
-K7 Linux 版本由 4G/5G/WiFi/以太网提供默认路由，再由应用层 MQTT 客户端连接 broker。旧 STM32 的 HiveMQ 配置只能作为历史参考，不能和当前 K7/上位机混用。
+K7 Linux 版本由 4G/5G/WiFi/以太网提供默认路由，再由应用层 MQTT 客户端连接 broker。当前 K7/上位机沿用旧 STM32 的 HiveMQ 域名与 topic 前缀，以适配现有物联网卡的定向流量规则。

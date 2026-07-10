@@ -4,7 +4,7 @@
 
 # MQTT Broker 配置
 # HiveMQ 公共测试 Broker（明文TCP，无需TLS，无需认证）
-MQTT_BROKER = "broker.emqx.io"
+MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
 MQTT_KEEPALIVE = 60
 MQTT_USE_TLS = False

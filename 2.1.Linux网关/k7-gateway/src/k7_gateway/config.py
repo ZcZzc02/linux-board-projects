@@ -5,7 +5,7 @@ from __future__ import annotations
 DEFAULT_LORA_DEVICE = "/dev/ttyS3"
 DEFAULT_LORA_BAUD = 9600
 
-MQTT_SERVER = "broker.emqx.io"
+MQTT_SERVER = "broker.hivemq.com"
 MQTT_PORT = 1883
 MQTT_CLIENT_ID = "k7-gateway-GW001"
 MQTT_TOPIC_PREFIX = "fengyan_daq_2026"

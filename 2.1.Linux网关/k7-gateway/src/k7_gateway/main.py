@@ -156,7 +156,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="keep K7 uplink on cellular first, then saved visible WiFi fallback",
     )
     watchdog.add_argument("--interval", type=float, default=10.0)
-    watchdog.add_argument("--broker-host", default="broker.emqx.io")
+    watchdog.add_argument("--broker-host", default="broker.hivemq.com")
     watchdog.add_argument("--broker-port", type=int, default=1883)
     watchdog.add_argument("--once", action="store_true", help="run one check cycle and exit")
     watchdog.set_defaults(func=cmd_network_watchdog)

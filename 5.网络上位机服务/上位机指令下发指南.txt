@@ -14,7 +14,7 @@
 FastAPI 服务器 (server/main.py)
   │  MQTT Publish  topic: fengyan_daq_2026/cmd/node/{node_id}
   ▼
-MQTT Broker (broker.emqx.io:1883)
+MQTT Broker (broker.hivemq.com:1883)
   │
   ▼
 K7 Linux 网关（k7-gateway.service）

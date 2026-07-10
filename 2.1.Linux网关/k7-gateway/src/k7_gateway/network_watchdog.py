@@ -119,7 +119,7 @@ class NetworkWatchdog:
         internet_check: InternetCheck | None = None,
         sleeper: Callable[[float], None] = time.sleep,
         logger: Logger = print,
-        broker_host: str = "broker.emqx.io",
+        broker_host: str = "broker.hivemq.com",
         broker_port: int = 1883,
         connect_timeout: float = 20.0,
         internet_timeout: float = 3.0,
@@ -291,7 +291,7 @@ class NetworkWatchdog:
 def run_network_watchdog(
     *,
     interval: float = 10.0,
-    broker_host: str = "broker.emqx.io",
+    broker_host: str = "broker.hivemq.com",
     broker_port: int = 1883,
     once: bool = False,
 ) -> int:

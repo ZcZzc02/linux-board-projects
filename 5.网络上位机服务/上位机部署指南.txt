@@ -4,13 +4,13 @@
 
 ## 当前实际配置
 
-- MQTT Broker：`broker.emqx.io:1883`
+- MQTT Broker：`broker.hivemq.com:1883`
 - MQTT topic 前缀：`fengyan_daq_2026`
 - 默认 Web 端口：`8000`
 - 数据库：当前目录自动创建的 `daq_data.db`
 - 推荐启动方式：浏览器模式 `启动上位机-浏览器模式.bat`
 
-旧文档中提到的 `broker.hivemq.com`、`broker.hivemq.com:1883`、固定的 Anaconda 路径以及端口 `8001` 均不是当前上位机的实际配置。
+旧文档中提到的 `broker.emqx.io`、固定的 Anaconda 路径以及端口 `8001` 均不是当前上位机的实际配置。
 
 ## 新电脑首次准备
 
@@ -44,7 +44,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 随后浏览器会打开 `http://127.0.0.1:8000`。页面同时显示：
 
-- `EMQX 已连接`：这台电脑已连接 MQTT Broker。
+- `HiveMQ 已连接`：这台电脑已连接 MQTT Broker。
 - `WebSocket 已连接`：浏览器页面已连接本机上位机服务。
 - `GW001 5G在线`、`4G在线` 或 `WiFi在线`：由 K7 网关 MQTT 状态消息决定，表示其当前默认上行链路。
 
@@ -81,4 +81,4 @@ Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue |
 
 页面一直显示 MQTT 未连接
 
-确认电脑能访问 `broker.emqx.io:1883`，并检查防火墙是否允许当前 Python 访问网络。K7 和上位机必须使用相同的 `MQTT_TOPIC_PREFIX`，当前值是 `fengyan_daq_2026`。
+确认电脑能访问 `broker.hivemq.com:1883`，并检查防火墙是否允许当前 Python 访问网络。K7 和上位机必须使用相同的 `MQTT_TOPIC_PREFIX`，当前值是 `fengyan_daq_2026`。
