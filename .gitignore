@@ -76,6 +76,7 @@ venv/
 JLinkLog.txt
 JLinkSettings.ini
 USER/Objects/
+handover-dist/
 
 # Node
 node_modules/
