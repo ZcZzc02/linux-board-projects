@@ -1,0 +1,84 @@
+# 数据采集上位机部署指南
+
+本文件只描述当前 `server` 目录的启动方式。所有路径均以本文件所在目录为基准，不需要把项目放到某个固定盘符。
+
+## 当前实际配置
+
+- MQTT Broker：`broker.emqx.io:1883`
+- MQTT topic 前缀：`fengyan_daq_2026`
+- 默认 Web 端口：`8000`
+- 数据库：当前目录自动创建的 `daq_data.db`
+- 推荐启动方式：浏览器模式 `启动上位机-浏览器模式.bat`
+
+旧文档中提到的 `broker.hivemq.com`、`broker.hivemq.com:1883`、固定的 Anaconda 路径以及端口 `8001` 均不是当前上位机的实际配置。
+
+## 新电脑首次准备
+
+1. 将整个 `server` 文件夹复制到任意本地目录。保留 `routers`、`templates`、`static`、`requirements.txt` 和两个启动脚本。
+2. 安装 Python 3.11 x64，并在安装器中勾选 `Add python.exe to PATH`。
+3. 在 `server` 文件夹的空白处右键，选择“在终端中打开”。依次执行：
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -c "import fastapi, paho.mqtt.client, webview; print('依赖安装成功')"
+```
+
+如果 PowerShell 拒绝执行激活脚本，先执行一次：
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+```
+
+这只对当前窗口生效，不会修改系统全局安全策略。
+
+## 启动与关闭
+
+首次建议在已激活 `.venv` 的终端中启动浏览器模式：
+
+```powershell
+.\启动上位机-浏览器模式.bat
+```
+
+随后浏览器会打开 `http://127.0.0.1:8000`。页面同时显示：
+
+- `EMQX 已连接`：这台电脑已连接 MQTT Broker。
+- `WebSocket 已连接`：浏览器页面已连接本机上位机服务。
+- `GW001 5G在线`、`4G在线` 或 `WiFi在线`：由 K7 网关 MQTT 状态消息决定，表示其当前默认上行链路。
+
+需要原生桌面窗口时，在激活 `.venv` 后执行：
+
+```powershell
+.\启动上位机.bat
+```
+
+关闭方法：在运行服务的终端按 `Ctrl+C`。仅关闭浏览器标签页不会停止后台服务；关闭原生窗口通常会结束 `main.py`，但仍建议回到终端确认进程已经退出。
+
+## 不应复制的运行时文件
+
+- `__pycache__`：Python 缓存，会自动再生。
+- `daq_data.db`：历史数据数据库。要保留历史再单独导出；交接一个干净环境时不要带它。
+- `.venv`：Python 虚拟环境与本机 Python 绑定，必须在新电脑重新创建。
+
+## 常见错误
+
+`ModuleNotFoundError: No module named 'webview'`
+
+说明没有在当前虚拟环境中执行 `python -m pip install -r requirements.txt`，或启动脚本使用了其他 Python。先运行 `where python`，首行应是 `server\.venv\Scripts\python.exe`。
+
+端口 `8000` 已被占用
+
+在 PowerShell 执行：
+
+```powershell
+Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue |
+  Select-Object -ExpandProperty OwningProcess -Unique
+```
+
+确认进程确实是旧的上位机后，关闭该窗口或结束该进程。不要同时运行两个上位机实例。
+
+页面一直显示 MQTT 未连接
+
+确认电脑能访问 `broker.emqx.io:1883`，并检查防火墙是否允许当前 Python 访问网络。K7 和上位机必须使用相同的 `MQTT_TOPIC_PREFIX`，当前值是 `fengyan_daq_2026`。

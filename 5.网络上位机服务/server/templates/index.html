@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数据采集监控</title>
+  <script>
+    window.onerror = function(msg, src, line, col, err) {
+      document.body.style.cssText = 'background:#fff;color:#c00;padding:20px;font:14px monospace;white-space:pre-wrap';
+      document.body.textContent = 'JS ERROR:\n' + msg + '\n' + src + ':' + line + ':' + col + '\n' + (err&&err.stack||'');
+      return true;
+    };
+  </script>
+  <script src="/static/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e0e0e0; }
+    header { background: #1a1d2e; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #2a2d3e; }
+    header h1 { font-size: 1.2rem; color: #7eb8f7; }
+    #ws-status { font-size: 0.8rem; padding: 4px 12px; border-radius: 12px; background: #2a2d3e; }
+    #ws-status.connected    { color: #4caf50; }
+    #ws-status.disconnected { color: #f44336; }
+    .status-pill { font-size: 0.8rem; padding: 4px 12px; border-radius: 12px; background: #2a2d3e; color: #5a6080; transition: color 0.3s; }
+    .status-pill.online  { color: #4caf50; }
+    .status-pill.offline { color: #f44336; }
+    .status-pill.warn    { color: #ff9800; }
+    .container { padding: 16px 24px; }
+    .section-title { font-size: 0.72rem; font-weight: 700; color: #5a6080; text-transform: uppercase; letter-spacing: 0.08em; margin: 18px 0 8px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    @media (max-width: 960px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+    .card { background: #1a1d2e; border-radius: 8px; border: 1px solid #2a2d3e; overflow: hidden; }
+    .card-header { padding: 9px 14px; background: #1e2235; font-size: 0.83rem; color: #7eb8f7; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+    .card-body { padding: 12px 14px; }
+    .realtime-value { text-align: center; padding: 16px 8px; }
+    .realtime-label { font-size: 0.75rem; color: #9ba3b8; margin-bottom: 6px; }
+    .realtime-number { font-size: 2.4rem; font-weight: 700; line-height: 1; }
+    .realtime-unit   { font-size: 0.8rem; color: #9ba3b8; margin-top: 4px; }
+    .voltage-color { color: #7eb8f7; }
+    .current-color { color: #ff9800; }
+    .chart-wrap { position: relative; height: 200px; }
+    .table-wrap { max-height: 260px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.77rem; }
+    th { position: sticky; top: 0; background: #1e2235; padding: 6px 8px; text-align: left; color: #9ba3b8; font-weight: 500; }
+    td { padding: 5px 8px; border-bottom: 1px solid #1e2235; font-family: monospace; }
+    tr:hover td { background: #1e2235; }
+    .badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+    .badge-rx  { background: #1a3a1a; color: #4caf50; }
+    .badge-tx  { background: #3a2a1a; color: #ff9800; }
+    .badge-can { background: #2a1a3a; color: #ce93d8; }
+    .badge-err { background: #3a1a1a; color: #f44336; }
+    .form-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+    .form-row input, .form-row select, .form-row textarea { background: #0f1117; border: 1px solid #2a2d3e; color: #e0e0e0; padding: 5px 9px; border-radius: 4px; font-size: 0.8rem; font-family: monospace; }
+    .form-row textarea { resize: vertical; min-height: 52px; width: 100%; }
+    .btn { border: none; padding: 6px 16px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; }
+    .btn-primary  { background: #1a5c9e; color: #fff; }
+    .btn-primary:hover  { background: #2178c4; }
+    .btn-danger   { background: #7a1a1a; color: #fff; }
+    .btn-danger:hover   { background: #a02020; }
+    .btn-ghost    { background: none; border: 1px solid #2a2d3e; color: #9ba3b8; }
+    .btn-ghost:hover    { background: #1e2235; }
+    .result-msg { font-size: 0.77rem; margin-top: 6px; }
+    .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
+    .preset-btn { background: #1e2235; border: 1px solid #2a2d3e; color: #c0c8e0; padding: 8px 6px; border-radius: 5px; font-size: 0.78rem; cursor: pointer; text-align: left; transition: background 0.15s; }
+    .preset-btn:hover { background: #252840; border-color: #7eb8f7; color: #7eb8f7; }
+    .preset-btn b { display: block; color: #7eb8f7; font-size: 0.72rem; margin-bottom: 2px; }
+    hr { border: none; border-top: 1px solid #2a2d3e; margin: 10px 0; }
+    .full-width { margin-bottom: 14px; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #1a1d2e; }
+    ::-webkit-scrollbar-thumb { background: #2a2d3e; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:12px">
+    <h1>数据采集监控</h1>
+    <span id="current-date" style="font-size:0.78rem;color:#9ba3b8"></span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span id="last-update" style="font-size:0.75rem;color:#5a6080">--</span>
+    <span id="mqtt-status"  class="status-pill">● HiveMQ 连接中...</span>
+    <span id="gw-status"    class="status-pill">● 网关 GW001 未知</span>
+    <span id="ws-status" class="disconnected">● WebSocket 未连接</span>
+    <button class="btn btn-ghost" onclick="location.reload()" style="font-size:0.75rem;padding:3px 10px">↺ 刷新</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="section-title">AD7606 采集</div>
+
+  <div class="grid-2" style="margin-bottom:14px">
+    <div class="card">
+      <div class="card-header">AD7606 采集通道</div>
+      <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0;padding:0">
+        <div class="realtime-value" style="border-right:1px solid #2a2d3e">
+          <div class="realtime-label">CH0-DC</div>
+          <div class="realtime-number voltage-color" id="rt-ch0-dc">--</div>
+          <div class="realtime-unit">mV</div>
+        </div>
+        <div class="realtime-value" style="border-right:1px solid #2a2d3e">
+          <div class="realtime-label">CH0-AC</div>
+          <div class="realtime-number" style="color:#7ee8d4" id="rt-ch0-ac">--</div>
+          <div class="realtime-unit">mV</div>
+        </div>
+        <div class="realtime-value" style="border-right:1px solid #2a2d3e">
+          <div class="realtime-label">CH1-DC</div>
+          <div class="realtime-number current-color" id="rt-ch1-dc">--</div>
+          <div class="realtime-unit">mV</div>
+        </div>
+        <div class="realtime-value">
+          <div class="realtime-label">CH1-AC</div>
+          <div class="realtime-number" style="color:#ffb74d" id="rt-ch1-ac">--</div>
+          <div class="realtime-unit">mV</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">节点信息</div>
+      <div class="card-body" style="font-size:0.78rem;color:#9ba3b8;padding-top:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 16px;line-height:1.9">
+          <div><span style="color:#7eb8f7">Broker：</span>broker.emqx.io :1883</div>
+          <div><span style="color:#7eb8f7">前缀：</span>fengyan_daq_2026</div>
+          <div><span style="color:#7eb8f7">API 文档：</span><a href="/docs" target="_blank" style="color:#7eb8f7">/docs</a></div>
+          <div><span style="color:#7eb8f7">最后更新：</span><span id="node-last-ts">--</span></div>
+        </div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid #2a2d3e">
+          <span style="color:#7eb8f7">终端通信：</span><span id="node-list" style="color:#9ba3b8">暂无数据</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">CH0 波形（DC / AC）</div>
+      <div class="card-body"><div class="chart-wrap"><canvas id="chart-ch0"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">CH1 波形（DC / AC）</div>
+      <div class="card-body"><div class="chart-wrap"><canvas id="chart-ch1"></canvas></div></div>
+    </div>
+  </div>
+
+  <div class="section-title">RS485</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        RS485 收发日志
+        <button class="btn btn-ghost" style="font-size:0.72rem;padding:2px 8px" onclick="clearTable('rs485-tbody')">清空</button>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>时间</th><th>方向</th><th>节点</th><th>数据（HEX）</th></tr></thead>
+            <tbody id="rs485-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">RS485 发送</div>
+      <div class="card-body">
+        <div class="form-row">
+          <label style="font-size:0.78rem;color:#9ba3b8;white-space:nowrap">节点 ID</label>
+          <input id="rs485-node" type="text" value="1" style="width:60px">
+          <label style="font-size:0.78rem;color:#9ba3b8;white-space:nowrap">从机地址</label>
+          <input id="rs485-slave" type="text" value="1" style="width:60px">
+          <label style="font-size:0.78rem;color:#9ba3b8;white-space:nowrap">寄存器</label>
+          <input id="rs485-reg" type="text" value="0" style="width:60px">
+        </div>
+        <div class="form-row" style="margin-top:8px">
+          <label style="font-size:0.78rem;color:#9ba3b8;white-space:nowrap">数据（HEX）</label>
+          <input id="rs485-data" type="text" placeholder="如 0A 00（空=读取）" style="flex:1;min-width:120px">
+        </div>
+        <div class="form-row" style="margin-top:8px">
+          <button class="btn btn-primary" onclick="sendRS485()">发送</button>
+          <button class="btn btn-ghost" onclick="sendRS485Read()">读寄存器</button>
+        </div>
+        <div id="rs485-result" class="result-msg"></div>
+        <hr>
+        <div style="font-size:0.75rem;color:#5a6080;line-height:1.7">
+          <b style="color:#9ba3b8">写：</b>填 HEX 后点"发送" &nbsp;
+          <b style="color:#9ba3b8">读：</b>留空点"读寄存器"
+        </div>
+        <hr style="margin-top:10px">
+        <div class="card-header" style="padding:0 0 6px 0;font-size:0.82rem">RS485 透传（原始帧）</div>
+        <div class="form-row">
+          <label style="font-size:0.78rem;color:#9ba3b8;white-space:nowrap">节点 ID</label>
+          <input id="raw-node" type="text" value="1" style="width:60px">
+          <label style="font-size:0.78rem;color:#9ba3b8;white-space:nowrap">HEX 字节</label>
+          <input id="raw-hex" type="text" placeholder="如 01 03 00 00 00 04" style="flex:1;min-width:120px" title="输入完整 Modbus 字节，不含 CRC（自动追加）">
+        </div>
+        <div class="form-row" style="margin-top:6px;align-items:center">
+          <label style="font-size:0.78rem;color:#9ba3b8;cursor:pointer">
+            <input id="raw-autocrc" type="checkbox" checked style="margin-right:4px">自动追加 CRC16/Modbus
+          </label>
+          <button class="btn btn-primary" style="margin-left:auto" onclick="sendRS485Raw()">透传发送</button>
+        </div>
+        <div id="raw-result" class="result-msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">CAN 总线</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        CAN 报文
+        <button class="btn btn-ghost" style="font-size:0.72rem;padding:2px 8px" onclick="clearTable('can-tbody')">清空</button>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>时间</th><th>方向</th><th>周期</th><th>节点</th><th>CAN ID</th><th>DLC</th><th>数据场（HEX）</th></tr></thead>
+            <tbody id="can-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">CAN 发送</div>
+      <div class="card-body">
+        <div class="form-row">
+          <label style="font-size:0.78rem;color:#9ba3b8;white-space:nowrap">节点 ID</label>
+          <input id="can-node" type="text" value="1" style="width:50px">
+          <label style="font-size:0.78rem;color:#9ba3b8;white-space:nowrap">CAN ID（HEX）</label>
+          <input id="can-id" type="text" value="0x601" style="width:70px" placeholder="如 0x601">
+          <label style="font-size:0.78rem;color:#9ba3b8;white-space:nowrap">模式</label>
+          <select id="can-mode" style="width:80px" onchange="canModeChange()">
+            <option value="once">单次</option>
+            <option value="cycle">周期</option>
+          </select>
+        </div>
+        <div class="form-row" style="margin-top:8px;align-items:center" id="can-interval-row" hidden>
+          <label style="font-size:0.78rem;color:#9ba3b8;white-space:nowrap">周期（ms）</label>
+          <input id="can-interval" type="number" value="1000" min="50" style="width:80px">
+        </div>
+        <div class="form-row" style="margin-top:8px">
+          <label style="font-size:0.78rem;color:#9ba3b8;white-space:nowrap">数据场（HEX，最多8字节）</label>
+        </div>
+        <div class="form-row" style="margin-top:4px">
+          <input id="can-data" type="text" placeholder="空=00 00 00 00 00 00 00 00" style="flex:1;font-family:monospace;letter-spacing:1px" maxlength="23" oninput="canDataFormat(this)" onkeydown="canDataKeydown(event,this)">
+        </div>
+        <div class="form-row" style="margin-top:8px">
+          <button class="btn btn-primary" id="can-send-btn" onclick="canSendOnce()">发送</button>
+          <button class="btn btn-danger" id="can-stop-btn" onclick="canStopCycle()" hidden>停止</button>
+        </div>
+        <div id="can-result" class="result-msg"></div>
+        <hr style="margin-top:10px">
+        <div style="font-size:0.74rem;color:#5a6080;line-height:2">
+          <b style="color:#9ba3b8">说明：</b>单次立即发一帧；周期模式持续按间隔发送直到点"停止"<br>
+          数据场填 HEX，字节间可加空格；留空时默认发送 8 字节 00
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const MAX_POINTS = 80;
+
+function makeChart(canvasId, label, color) {
+  return new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{ label, data: [], borderColor: color,
+        backgroundColor: color.replace(')', ',0.08)').replace('rgb','rgba'),
+        tension: 0.3, pointRadius: 1.5, borderWidth: 1.5 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      scales: {
+        x: {
+          title: { display: true, text: '时间', color: '#9ba3b8', font: { size: 11 } },
+          ticks: { color:'#9ba3b8', maxRotation:0, autoSkip:true, maxTicksLimit:10 },
+          grid: { color:'#1e2235' }
+        },
+        y: {
+          min: -5000, max: 5000,
+          title: { display: true, text: 'mV', color: '#9ba3b8', font: { size: 11 } },
+          ticks: { color:'#9ba3b8', stepSize: 1000,
+            callback: v => (v/1000).toFixed(0)+'V' },
+          grid: { color:'#1e2235' }
+        }
+      },
+      plugins: { legend: { labels: { color:'#9ba3b8', boxWidth:10, font:{size:11} } } }
+    }
+  });
+}
+
+function makeChart2(canvasId, label1, color1, label2, color2) {
+  return new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label: label1, data: [], borderColor: color1,
+          backgroundColor: color1.replace(')', ',0.08)').replace('rgb','rgba'),
+          tension: 0.3, pointRadius: 1.5, borderWidth: 1.5 },
+        { label: label2, data: [], borderColor: color2,
+          backgroundColor: color2.replace(')', ',0.08)').replace('rgb','rgba'),
+          tension: 0.3, pointRadius: 1.5, borderWidth: 1.5 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      scales: {
+        x: {
+          title: { display: true, text: '时间', color: '#9ba3b8', font: { size: 11 } },
+          ticks: { color:'#9ba3b8', maxRotation:0, autoSkip:true, maxTicksLimit:10 },
+          grid: { color:'#1e2235' }
+        },
+        y: {
+          min: -5000, max: 5000,
+          title: { display: true, text: 'mV', color: '#9ba3b8', font: { size: 11 } },
+          ticks: { color:'#9ba3b8', stepSize: 1000,
+            callback: v => (v/1000).toFixed(0)+'V' },
+          grid: { color:'#1e2235' }
+        }
+      },
+      plugins: { legend: { labels: { color:'#9ba3b8', boxWidth:10, font:{size:11} } } }
+    }
+  });
+}
+
+const ch0Chart = makeChart2('chart-ch0', 'CH0-DC (mV)', 'rgb(126,184,247)', 'CH0-AC (mV)', 'rgb(126,232,212)');
+const ch1Chart = makeChart2('chart-ch1', 'CH1-DC (mV)', 'rgb(255,152,0)',   'CH1-AC (mV)', 'rgb(255,183,77)');
+
+function pushChart2(chart, label, v0, v1) {
+  chart.data.labels.push(label);
+  chart.data.datasets[0].data.push(v0);
+  chart.data.datasets[1].data.push(v1);
+  if (chart.data.labels.length > MAX_POINTS) {
+    chart.data.labels.shift();
+    chart.data.datasets[0].data.shift();
+    chart.data.datasets[1].data.shift();
+  }
+  chart.update();
+}
+
+function updateAD7606(record) {
+  const chs = (record.parsed || {}).channels_mv || [];
+  const d   = new Date(record.ts + 'Z');
+  const ts  = d.toLocaleTimeString('zh-CN') + '.' + Math.floor(d.getMilliseconds() / 100);
+  // [0]=CH0-AC, [1]=CH0-DC, [2]=CH1-AC, [3]=CH1-DC
+  if (chs[1] != null) { document.getElementById('rt-ch0-dc').textContent = chs[1].toFixed(1); }
+  if (chs[0] != null) { document.getElementById('rt-ch0-ac').textContent = chs[0].toFixed(1); }
+  if (chs[3] != null) { document.getElementById('rt-ch1-dc').textContent = chs[3].toFixed(1); }
+  if (chs[2] != null) { document.getElementById('rt-ch1-ac').textContent = chs[2].toFixed(1); }
+  if (chs[0] != null || chs[1] != null) pushChart2(ch0Chart, ts, chs[1] ?? null, chs[0] ?? null);
+  if (chs[2] != null || chs[3] != null) pushChart2(ch1Chart, ts, chs[3] ?? null, chs[2] ?? null);
+  document.getElementById('last-update').textContent = '更新：' + ts;
+  document.getElementById('node-last-ts').textContent = ts;
+}
+
+const rs485Tbody = document.getElementById('rs485-tbody');
+function addRS485Row(ts, dir, node, hex) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${ts}</td><td><span class="badge badge-${dir==='RX'?'rx':'tx'}">${dir}</span></td><td>${node}</td><td title="${hex}">${hex.substring(0,48)}${hex.length>48?'…':''}</td>`;
+  rs485Tbody.prepend(tr);
+  if (rs485Tbody.rows.length > 100) rs485Tbody.deleteRow(-1);
+}
+
+const canTbody = document.getElementById('can-tbody');
+const _canLastTs = {};
+function addCANRow(ts, node, canId, dlc, canData, dir) {
+  const now = Date.now();
+  const key = canId;
+  let period = '--';
+  if (_canLastTs[key]) {
+    const diff = now - _canLastTs[key];
+    period = diff < 60000 ? (diff / 1000).toFixed(2) + 's' : '>60s';
+  }
+  _canLastTs[key] = now;
+  const _idDisplay = String(canId).replace(/^0x/i, '');
+  const dataField = (String(canData).replace(/\s+/g,'').match(/.{2}/g) || []).join(' ');
+  const dirLabel = dir === 'TX'
+    ? '<span class="badge badge-tx">Tx</span>'
+    : '<span class="badge badge-rx">Rx</span>';
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${ts}</td><td>${dirLabel}</td><td style="color:#9ba3b8">${period}</td><td>${node}</td><td><span class="badge badge-can">0x${_idDisplay}</span></td><td>${dlc}</td><td>${dataField}</td>`;
+  canTbody.prepend(tr);
+  if (canTbody.rows.length > 100) canTbody.deleteRow(-1);
+}
+
+function clearTable(id) { document.getElementById(id).innerHTML = ''; }
+
+// 当前日期显示
+function updateDate() {
+  const el = document.getElementById('current-date');
+  if (!el) return;
+  const now = new Date();
+  el.textContent = now.toLocaleDateString('zh-CN', {year:'numeric', month:'long', day:'numeric', weekday:'short'});
+}
+updateDate();
+setInterval(updateDate, 60000);
+
+// 终端通信状态追踪
+const _activeNodes = {};  // key: nodeAddr, val: {lastSeen, typeName}
+function markNodeActive(addr, typeName) {
+  _activeNodes[addr] = { lastSeen: Date.now(), typeName };
+  const el = document.getElementById('node-list');
+  if (!el) return;
+  const keys = Object.keys(_activeNodes);
+  el.innerHTML = keys.map(k => {
+    const n = _activeNodes[k];
+    const age = Date.now() - n.lastSeen;
+    const online = age < 15000;
+    return `<span style="margin-right:10px"><span style="color:${online?'#4caf50':'#9ba3b8'}">●</span> 节点 ${k} <span style="font-size:0.7rem;color:#5a6080">[${n.typeName}]</span></span>`;
+  }).join('');
+}
+
+function gatewayTransportLabel(transport) {
+  const t = String(transport || '').toLowerCase();
+  if (t === 'wifi') return 'WiFi';
+  if (t === '4g' || t === 'cat1') return '4G';
+  if (t === '5g') return '5G';
+  return '';
+}
+
+function connectWS() {
+  const ws = new WebSocket(`ws://${location.host}/ws`);
+  const wsStatus = document.getElementById('ws-status');
+  ws.onopen  = () => { wsStatus.textContent='● WebSocket 已连接'; wsStatus.className='connected'; };
+  ws.onclose = () => { wsStatus.textContent='● WebSocket 断开，重连中…'; wsStatus.className='disconnected'; setTimeout(connectWS,3000); };
+  ws.onmessage = (evt) => {
+    let r; try { r=JSON.parse(evt.data); } catch { return; }
+
+    // 服务器 MQTT 连接状态
+    if (r.type === 'server_mqtt') {
+      const el = document.getElementById('mqtt-status');
+      if (r.connected) { el.textContent='● HiveMQ 已连接'; el.className='status-pill online'; }
+      else             { el.textContent='● HiveMQ 断开';   el.className='status-pill offline'; }
+      return;
+    }
+
+    // 网关状态
+    if (r.type === 'gw_status') {
+      const el = document.getElementById('gw-status');
+      const link = gatewayTransportLabel(r.transport);
+      if (r.online) { el.textContent = link ? `● 网关 GW001 ${link}在线` : '● 网关 GW001 在线'; el.className='status-pill online'; }
+      else          { el.textContent='● 网关 GW001 离线'; el.className='status-pill offline'; }
+      return;
+    }
+
+    // 节点状态
+    if (r.type === 'node_status') { return; }
+
+    const p = r.parsed || {};
+    const ts = new Date(r.ts+'Z').toLocaleTimeString('zh-CN');
+    const nh = p.node_addr!=null ? `0x${p.node_addr.toString(16).toUpperCase().padStart(2,'0')}` : '--';
+    if (nh !== '--' && p.type_name) markNodeActive(nh, p.type_name);
+    if (p.type_name==='AD7606' && p.crc_ok!==false) updateAD7606(r);
+    else if (p.type_name==='RS485') {
+      const desc = p.voltage!=null
+        ? `V=${p.voltage} I=${p.current} SOC=${p.soc}% R3=${p.raw3}`
+        : (p.payload_hex||r.raw_hex||'');
+      addRS485Row(ts,'RX',nh, desc);
+    }
+    else if (p.type_name==='CAN') addCANRow(ts, nh, p.can_id||'--', p.can_dlc??'--', p.can_data||'', 'RX');
+  };
+}
+connectWS();
+
+async function apiPost(cmd, nodeId, params, resultId) {
+  const el = document.getElementById(resultId);
+  try {
+    const r = await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({node_id:nodeId,cmd,params})});
+    const d = await r.json();
+    el.style.color='#4caf50'; el.textContent=`√ [${cmd}] 已发送到节点 ${nodeId}`;
+  } catch(e) { el.style.color='#f44336'; el.textContent=`? ${e.message}`; }
+}
+
+async function sendRS485() {
+  const n=document.getElementById('rs485-node').value.trim();
+  const s=parseInt(document.getElementById('rs485-slave').value)||1;
+  const reg=parseInt(document.getElementById('rs485-reg').value)||0;
+  const data=document.getElementById('rs485-data').value.trim().replace(/\s/g,'');
+  await apiPost('rs485_write',n,{slave:s,reg,data},'rs485-result');
+  addRS485Row(new Date().toLocaleTimeString('zh-CN'),'TX',`0x${parseInt(n).toString(16).toUpperCase().padStart(2,'0')}`,data||'(read)');
+}
+async function sendRS485Read() {
+  document.getElementById('rs485-data').value='';
+  const n=document.getElementById('rs485-node').value.trim();
+  await apiPost('rs485_read',n,{slave:parseInt(document.getElementById('rs485-slave').value)||1,reg:parseInt(document.getElementById('rs485-reg').value)||0},'rs485-result');
+}
+
+function crc16modbus(buf){
+  let crc=0xFFFF;
+  for(const b of buf){crc^=b;for(let i=0;i<8;i++){if(crc&1)crc=(crc>>>1)^0xA001;else crc>>>=1;}}
+  return crc;
+}
+async function sendRS485Raw(){
+  const n=document.getElementById('raw-node').value.trim();
+  const hexStr=document.getElementById('raw-hex').value.trim().replace(/\s+/g,'');
+  const autoCrc=document.getElementById('raw-autocrc').checked;
+  const el=document.getElementById('raw-result');
+  if(!hexStr||hexStr.length%2!==0){el.style.color='#f44336';el.textContent='HEX 格式错误（字节数为奇数）';return;}
+  const bytes=[];
+  for(let i=0;i<hexStr.length;i+=2) bytes.push(parseInt(hexStr.slice(i,i+2),16));
+  if(autoCrc){const c=crc16modbus(bytes);bytes.push(c&0xFF,(c>>8)&0xFF);}
+  const finalHex=bytes.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join('');
+  await apiPost('rs485_raw',n,{hex:finalHex},'raw-result');
+  addRS485Row(new Date().toLocaleTimeString('zh-CN'),'TX',`0x${parseInt(n).toString(16).toUpperCase().padStart(2,'0')}`,finalHex);
+}
+
+/* ── CAN 发送 ── */
+let _canTimer = null;
+
+function canDataKeydown(e, el){
+  // 每2个HEX字符后阻止继续键入（允许删除/方向/ctrl/退格）
+  const ctrl = e.ctrlKey||e.metaKey;
+  if(ctrl) return;
+  const allow = ['Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Tab','Home','End'];
+  if(allow.includes(e.key)) return;
+  // 去掉空格后纯HEX长度 >= 16 位 (8字节) 则阻止
+  const raw = el.value.replace(/\s/g,'');
+  if(raw.length >= 16){ e.preventDefault(); return; }
+}
+
+function canDataFormat(el){
+  const cursor = el.selectionStart;
+  const before = el.value.slice(0, cursor).replace(/\s/g,'').length; // HEX chars before cursor
+  // 只保留 HEX 字符，最多16个
+  let raw = el.value.replace(/[^0-9a-fA-F]/g,'').slice(0,16).toUpperCase();
+  // 每2字符插一个空格
+  const formatted = raw.match(/.{1,2}/g)?.join(' ') ?? '';
+  el.value = formatted;
+  // 还原光标：数出 before 个HEX字符后的位置
+  let hc=0, pos=0;
+  for(let i=0;i<formatted.length;i++){
+    if(formatted[i]!==' ') hc++;
+    if(hc===before){ pos=i+1; break; }
+  }
+  if(before===0) pos=0;
+  el.setSelectionRange(pos,pos);
+}
+
+function canModeChange(){
+  const cycle = document.getElementById('can-mode').value === 'cycle';
+  document.getElementById('can-interval-row').hidden = !cycle;
+}
+
+function _canParseInput(){
+  const n    = document.getElementById('can-node').value.trim();
+  const idStr= document.getElementById('can-id').value.trim().replace(/^0x/i,'');
+  const dataStr = document.getElementById('can-data').value.trim().replace(/\s+/g,'');
+  const el   = document.getElementById('can-result');
+  if(!idStr){ el.style.color='#f44336'; el.textContent='CAN ID 不能为空'; return null; }
+  if(dataStr.length % 2 !== 0){ el.style.color='#f44336'; el.textContent='数据场字节数为奇数'; return null; }
+  const bytes=[];
+  if(dataStr.length === 0) {
+    for(let i=0;i<8;i++) bytes.push(0);
+  } else {
+    for(let i=0;i<dataStr.length;i+=2) bytes.push(parseInt(dataStr.slice(i,i+2),16));
+  }
+  if(bytes.length>8){ el.style.color='#f44336'; el.textContent='数据场最多 8 字节'; return null; }
+  return { n, canId:'0x'+idStr.toUpperCase(), dataHex: bytes.map(b=>b.toString(16).padStart(2,'0').toUpperCase()).join(' '), dlc: bytes.length };
+}
+
+async function _canDoSend(p){
+  const res = await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({node_id:p.n, cmd:'relay', params:{bus:'can', can_id:p.canId, data:p.dataHex, dlc:p.dlc}})});
+  const j = await res.json();
+  const el = document.getElementById('can-result');
+  if(res.ok){ el.style.color='#4caf50'; el.textContent=`✓ 已发送 ${p.canId} [${p.dataHex}]`; }
+  else{ el.style.color='#f44336'; el.textContent=`✗ ${j.detail||'发送失败'}`; }
+  addCANRow(new Date().toLocaleTimeString('zh-CN'), `0x${parseInt(p.n).toString(16).toUpperCase().padStart(2,'0')}`, p.canId, p.dlc, p.dataHex, 'TX');
+}
+
+async function canSendOnce(){
+  const p = _canParseInput(); if(!p) return;
+  const mode = document.getElementById('can-mode').value;
+  if(mode === 'cycle'){
+    if(_canTimer){ clearInterval(_canTimer); _canTimer=null; }
+    const ms = Math.max(50, parseInt(document.getElementById('can-interval').value)||1000);
+    document.getElementById('can-send-btn').hidden = true;
+    document.getElementById('can-stop-btn').hidden = false;
+    document.getElementById('can-result').style.color='#7eb8f7';
+    document.getElementById('can-result').textContent=`周期发送中，间隔 ${ms}ms …`;
+    _canDoSend(p);
+    _canTimer = setInterval(()=>{ const q=_canParseInput(); if(q) _canDoSend(q); }, ms);
+  } else {
+    await _canDoSend(p);
+  }
+}
+
+function canStopCycle(){
+  if(_canTimer){ clearInterval(_canTimer); _canTimer=null; }
+  document.getElementById('can-send-btn').hidden = false;
+  document.getElementById('can-stop-btn').hidden = true;
+  document.getElementById('can-result').style.color='#9ba3b8';
+  document.getElementById('can-result').textContent='已停止周期发送';
+}
+
+fetch('/api/frames?limit=30')
+  .then(r=>r.json())
+  .then(rows=>rows.reverse().forEach(row=>{
+    const ts=row.ts?new Date(row.ts+'Z').toLocaleTimeString('zh-CN'):'--';
+    const nh=row.node_addr!=null?`0x${row.node_addr.toString(16).toUpperCase().padStart(2,'0')}`:'--';
+    if(row.type_name==='RS485') addRS485Row(ts,'RX',nh,row.raw_hex||'');
+    if(row.type_name==='CAN')   addCANRow(ts,nh,'--','--',row.raw_hex||'','RX');
+  })).catch(()=>{});
+</script>
+</body>
+</html>

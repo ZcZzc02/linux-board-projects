@@ -99,7 +99,7 @@ python3 -m k7_gateway parse-hex 01011000010002000300040005000600070008xxxx
 在开发电脑上执行：
 
 ```bash
-python -m unittest discover -s 2.1.Linux网关/k7-gateway/tests
+PYTHONPATH=src python -m unittest discover -s tests
 ```
 
 ## 后续路线

@@ -29,11 +29,11 @@
 
 ## K7 基础检查
 
-Windows 侧使用项目内或工具目录里的 ADB：
+Windows 侧先确认 `adb` 已加入 PATH；下面的命令不依赖项目所在盘符：
 
 ```powershell
-& 'D:\tools\platform-tools\adb.exe' devices
-& 'D:\tools\platform-tools\adb.exe' shell "ip -br addr; uname -a"
+adb devices
+adb shell "ip -br addr; uname -a"
 ```
 
 成功现象：
@@ -47,7 +47,7 @@ Linux kickpi 6.1.75 ...
 检查 UART3 / I2C7 运行时状态：
 
 ```powershell
-& 'D:\tools\platform-tools\adb.exe' shell "cat /proc/device-tree/serial@2ad60000/status; echo; cat /proc/device-tree/i2c@2aca0000/status; echo; ls -l /dev/ttyS3 /dev/i2c-7 2>/dev/null"
+adb shell "cat /proc/device-tree/serial@2ad60000/status; echo; cat /proc/device-tree/i2c@2aca0000/status; echo; ls -l /dev/ttyS3 /dev/i2c-7 2>/dev/null"
 ```
 
 成功现象：
@@ -62,7 +62,7 @@ Linux kickpi 6.1.75 ...
 节点板打开后，在 K7 上监听 UART3：
 
 ```powershell
-& 'D:\tools\platform-tools\adb.exe' shell "cd /root/k7-gateway && PYTHONPATH=src timeout 30 python3 -m k7_gateway listen-lora --device /dev/ttyS3 --seconds 25 --raw"
+adb shell "cd /root/k7-gateway && PYTHONPATH=src timeout 30 python3 -m k7_gateway listen-lora --device /dev/ttyS3 --seconds 25 --raw"
 ```
 
 成功现象：
@@ -86,7 +86,7 @@ netstat -ano | Select-String ':8001'
 检查后台日志：
 
 ```powershell
-Get-Content -Path 'D:\rk3576开发\work\backend8001.err.log' -Tail 80
+Get-Content -Path (Join-Path (Get-Location) 'work\backend8001.err.log') -Tail 80
 ```
 
 成功现象：
@@ -101,7 +101,7 @@ Get-Content -Path 'D:\rk3576开发\work\backend8001.err.log' -Tail 80
 在 K7 上运行 LoRa 网关程序，并把解析后的数据发布到 MQTT：
 
 ```powershell
-& 'D:\tools\platform-tools\adb.exe' shell "cd /root/k7-gateway && PYTHONPATH=src timeout 35 python3 -m k7_gateway run-lora --device /dev/ttyS3 --seconds 25 --raw-log /tmp/lora.raw.log --log /tmp/lora.jsonl --mqtt-broker broker.emqx.io --transport wifi"
+adb shell "cd /root/k7-gateway && PYTHONPATH=src timeout 35 python3 -m k7_gateway run-lora --device /dev/ttyS3 --seconds 25 --raw-log /tmp/lora.raw.log --log /tmp/lora.jsonl --mqtt-broker broker.emqx.io --transport wifi"
 ```
 
 成功现象：

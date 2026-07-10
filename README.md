@@ -7,7 +7,7 @@
 - 本项目已经初始化为 Git 仓库，当前主分支为 `main`。
 - GitHub 远端仓库：`https://github.com/ZcZzc02/linux-board-projects.git`
 - 本地 `main` 已同步到 `origin/main`。
-- Git 已安装在 `D:\tools\git`。如果 PowerShell 找不到裸 `git` 命令，可以使用 `D:\tools\git\cmd\git.exe`，或把 `D:\tools\git\cmd` 加入系统 PATH。
+- Git 应安装并加入 PATH。原开发电脑曾使用 `D:\tools\git`，该路径不是项目依赖，迁移到新电脑时不需要复现。
 - 根目录包含 SDK、文档和备份压缩包等大文件来源，提交前必须确认 `.gitignore` 生效，避免把 SDK、镜像、压缩包和 build 输出提交进仓库。
 
 ## 目录结构
@@ -36,11 +36,11 @@
 先确认 Git 可用：
 
 ```powershell
-& 'D:\tools\git\cmd\git.exe' --version
-& 'D:\tools\git\cmd\git.exe' status --short --branch
+git --version
+git status --short --branch
 ```
 
-如果希望直接使用 `git` 命令，请把 `D:\tools\git\cmd` 加入系统 PATH，然后重新打开 PowerShell。
+如果 PowerShell 找不到 `git`，安装 Git for Windows 并勾选加入 PATH 后重新打开终端。
 
 在 Linux 或 WSL 环境中检查开发工具：
 
@@ -58,6 +58,7 @@
 - 调试方法：[`docs/debug.md`](docs/debug.md)
 - 跨电脑复现：[`docs/reproduce.md`](docs/reproduce.md)
 - K7 网关接口约定：[`docs/INTERFACE_SPEC.md`](docs/INTERFACE_SPEC.md)
+- 跨电脑交接与恢复：[`docs/K7项目交接指南.md`](docs/K7项目交接指南.md)
 
 ## K7 Linux 网关
 

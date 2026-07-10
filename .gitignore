@@ -63,6 +63,19 @@ __pycache__/
 .pytest_cache/
 .venv/
 venv/
+*.db
+
+# Keil / STM32 local build and user-state files
+*.axf
+*.hex
+*.crf
+*.dep
+*.d
+*.uvguix.*
+*.uvoptx
+JLinkLog.txt
+JLinkSettings.ini
+USER/Objects/
 
 # Node
 node_modules/

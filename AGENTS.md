@@ -4,16 +4,16 @@
 
 ## 当前项目
 
-- 项目目录：`D:\rk3576开发`
+- 项目目录：当前打开的工作区根目录（不得在命令、脚本或文档中假定为固定盘符）
 - 暂定项目名：`rk3576开发`
 - 目标平台：KICKPI K7 / RK3576 相关开发资料与工程
-- 当前 Git 路径：`D:\tools\git\cmd\git.exe`
+- Git：优先使用 PATH 中的 `git`。原开发电脑可回退使用 `D:\tools\git\cmd\git.exe`；迁移到其他电脑后不得假定该路径存在。
 - 说明：具体 SDK 版本、内核版本、工具链版本需要在后续实际编译时补齐到 `docs/reproduce.md`。
 
 ## 每次开始任务必须先做
 
 1. 执行 `git status --short --branch`，检查当前工作区状态。
-2. 如果 `git` 命令不可用，优先尝试 `D:\tools\git\cmd\git.exe`，并提醒用户把 `D:\tools\git\cmd` 加入 PATH。
+2. 如果 `git` 命令不可用，先要求安装 Git 或将其安装目录加入 PATH。仅原开发电脑可尝试 `D:\tools\git\cmd\git.exe`。
 3. 如果目录没有完整可用的 Git 仓库，提醒用户初始化。仅存在空的 `.git` 目录不算完整仓库。
 
    ```bash

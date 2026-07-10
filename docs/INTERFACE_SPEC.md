@@ -181,7 +181,7 @@ payload 示例：
 
 ## MQTT
 
-旧工程当前配置：
+旧 STM32 网关的历史配置：
 
 | 项目 | 值 |
 | --- | --- |
@@ -192,4 +192,12 @@ payload 示例：
 | password | 空 |
 | topic prefix | `fengyan_daq_2026` |
 
-K7 Linux 版本后续应优先使用系统网络能力，由 4G/5G/WiFi/以太网提供默认路由，再由应用层 MQTT 客户端连接 broker。
+当前 K7 Linux 网关和 Windows 上位机统一使用以下实际配置：
+
+| 项目 | 值 |
+| --- | --- |
+| broker | `broker.emqx.io` |
+| port | `1883` |
+| topic prefix | `fengyan_daq_2026` |
+
+K7 Linux 版本由 4G/5G/WiFi/以太网提供默认路由，再由应用层 MQTT 客户端连接 broker。旧 STM32 的 HiveMQ 配置只能作为历史参考，不能和当前 K7/上位机混用。
