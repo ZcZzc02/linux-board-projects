@@ -35,6 +35,7 @@ def git(*args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True, help='New ZIP path; refuses overwrite')
+    parser.add_argument('--compression-level', type=int, choices=range(1, 10), default=1)
     args = parser.parse_args()
     output = args.output.resolve()
     if output.exists():
@@ -120,7 +121,7 @@ def main():
     for name, path in toolpaths.items():
         tree(path, 'tools/' + name)
     # Prefer locally installed current ADB without depending on its install path on the recipient PC.
-    local_adb = Path(shutil.which('adb') or 'D:/tools/platform-tools/adb.exe')
+    local_adb = Path(shutil.which('adb') or str(toolroot / 'win_x64_ADB_Tool/adb-tools/adb.exe'))
     if not local_adb.is_file():
         local_adb = toolroot / 'win_x64_ADB_Tool/adb-tools/adb.exe'
     for name in ('adb.exe', 'AdbWinApi.dll', 'AdbWinUsbApi.dll'):
@@ -144,7 +145,7 @@ def main():
     manifest = []
     prefix = 'K7-NewBoard-Handover/'
     with zipfile.ZipFile(output, 'x', compression=zipfile.ZIP_DEFLATED,
-                         compresslevel=6, allowZip64=True) as archive:
+                         compresslevel=args.compression_level, allowZip64=True) as archive:
         for index, (name, source) in enumerate(sorted(items.items()), 1):
             try:
                 origin = source.relative_to(ROOT).as_posix()
@@ -162,6 +163,11 @@ def main():
                     if count != 1:
                         raise ValueError('Expected one legacy credential macro: ' + macro.decode())
                 transformations.append({'path': name, 'change': 'three SSID/password macros redacted; original source unchanged'})
+            if name == 'tools/FactoryTool-v1.89/Project.ini':
+                raw, count = re.subn(rb'(?m)^PREFIRMWARE=[^\r\n]*', b'PREFIRMWARE=', source.read_bytes())
+                if count != 1:
+                    raise ValueError('Expected saved FactoryTool firmware setting')
+                transformations.append({'path': name, 'change': 'saved firmware absolute path cleared'})
             if raw is not None:
                 archive.writestr(prefix + name, raw)
                 size, digest = len(raw), hashlib.sha256(raw).hexdigest()
