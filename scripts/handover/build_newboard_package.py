@@ -99,7 +99,7 @@ def main():
     tree(VENDOR / '4-HardwareData/LCD', 'references/hardware/LCD')
     tree(VENDOR / '4-HardwareData/datasheet', 'references/hardware/datasheet')
     for name in ('KICKPI-K7规格书.pdf', 'KICKPI-K7_Specification.pdf'):
-        add(VENDOR / '0-Specifications' / name, 'references/hardware/' + name)
+        add(VENDOR / '0-Specifications/K7-RK3576' / name, 'references/hardware/' + name)
     add(ROOT / 'K7当前状态交接与续开发指南.md', 'references/历史交接说明.md')
     tree(ROOT / 'work/sdk-dts-backup-20260627', 'references/device-tree/historical-sdk-copy')
     add(ROOT / 'work/boot-uart3.its', 'references/device-tree/boot-uart3.its')
